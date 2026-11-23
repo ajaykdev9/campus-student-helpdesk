@@ -1,3 +1,5 @@
+import {planHelp} from './agent.js';
+import {assistance} from './assistant.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
@@ -75,12 +77,33 @@ app.patch('/api/tickets/:key',async(req,res)=>{
  else if(b.action==='confirm'&&u._id===t.owner&&t.status==='Resolved'){fields.status='Closed';note='Fix confirmed';}
  else if(b.action==='reopen'&&u._id===t.owner&&['Closed','Resolved'].includes(t.status)){fields.status='Reported';note=string(b.note,800);}
  else fail(403,'Action unavailable for this role or status');
- const now=new Date().toISOString();const saved=await update('tickets',{_id:t._id,revision:b.revision},{...fields,updated:now,revision:t.revision+1,history:[...t.history,{at:now,by:u.name,note}]});
+ const now=new Date().toISOString();const saved=await update('tickets',{_id:t._id,revision:b.revision},{...fields,updated:now,revision:t.revision+1,history:[...t.history,{at:now,by:u.name,note,kind:b.action}]});
  if(!saved)fail(409,'Ticket changed. Refresh before trying again');res.json(saved);
 });
 app.delete('/api/tickets/:key',async(req,res)=>{
  const t=req.ticket;if(t.owner!==req.user._id||t.status!=='Reported')fail(403,'Only your open reports can be deleted');
  if(!await remove('tickets',{_id:t._id,revision:t.revision}))fail(409,'Refresh the ticket');res.sendStatus(204);
+});
+app.post('/api/assist',async(req,res)=>{
+ const query=string(req.body.query,350),category=string(req.body.category,60);
+ if(!Object.hasOwn(teams,category))fail(400,'Unknown category');
+ const plan=await planHelp(query,category,teams);
+ if(plan.tool==='draft_request')return res.json({plan,method:'Draft request',modelStatus:'Local model',sources:[],next:'Review the proposed category and submit the report when ready.'});
+ const fixes=plan.tool==='find_cases'?[]:await list('fixes');
+ res.json({...await assistance(query,plan.category,fixes,await list('tickets',scope(req.user))),plan});
+});
+app.get('/api/devices/open',async(req,res)=>{
+ const asset=string(req.query.asset,100);
+ const rows=(await list('tickets',{asset})).filter(t=>['Reported','In progress'].includes(t.status));
+ res.json({count:rows.length,working:rows.some(t=>t.status==='In progress')});
+});
+app.post('/api/tickets/:key/publish',async(req,res)=>{
+ const t=req.ticket;
+ if(req.user.role==='Student'||!['Resolved','Closed'].includes(t.status))fail(403,'Only resolved staff cases can become fixes');
+ const key='ticket-'+t._id;
+ const title=string(req.body.title,120),body=string(req.body.body,1500);
+ try{await put('fixes',{_id:key,title,body,category:t.category});}catch(err){if(err.code!==11000)throw err;}
+ res.json({id:key});
 });
 app.get('/api/fixes',async(req,res)=>res.json(await list('fixes')));
 app.post('/api/fixes',async(req,res)=>{

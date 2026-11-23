@@ -68,3 +68,13 @@ Students view their own tickets. Staff see their team's queue. Admins can reassi
 ## Submission
 Title: Campus Student Helpdesk with QR Reporting and Cloud Lab Support.
 Use the official form, verify your class/section and the requested upload format. For GitHub, publish source with the supplied .gitignore and keep .env private.
+
+## QR lookup, reusable fixes and the help assistant
+Scanning a label starts a report and queries aggregate open-report count and work status for the same device. Other students' ticket titles, photos and identities stay private. In a resolved ticket, authorized staff can expand **Save as verified fix**, review the suggested public text, remove private information and publish. Repeated clicks produce one article per ticket.
+
+Type an issue title and click **Find similar cases and help**. Python 3 (standard library only) ranks published guidance and the user's accessible resolved cases with corpus-fitted TF-IDF cosine similarity. Set PYTHON_BIN if the Python executable has another name. The server falls back to keyword matching when Python is unavailable. The new routes are GET /api/devices/open?asset=..., POST /api/tickets/:id/publish and POST /api/assist.
+
+Optional local GenAI: run Ollama on the backend computer with a downloaded text model. Set OLLAMA_MODEL in .env to that installed model's exact name and start in MongoDB mode. For the local demo use PowerShell's environment variable before npm run demo. The planner selects search, similar cases or a category draft; the student reviews and saves it. Generated guidance uses published help articles. The default mode runs without a model download or paid API. Live model output depends on your installed model.
+
+## Verification
+npm test exercises the in-memory API workflow, role restrictions, stale updates, reusable fixes, model-free retrieval, privacy-preserving device counts, incident deduplication and resolution. The build compiles the React UI. Live MongoDB and live local-model checks require those services. To verify persistence, create a request in MongoDB mode, restart the backend, sign in again and check that the same request and history remain.
