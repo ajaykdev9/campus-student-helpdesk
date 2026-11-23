@@ -78,3 +78,6 @@ Optional local GenAI: run Ollama on the backend computer with a downloaded text 
 
 ## Verification
 npm test exercises the in-memory API workflow, role restrictions, stale updates, reusable fixes, model-free retrieval, privacy-preserving device counts, incident deduplication and resolution. The build compiles the React UI. Live MongoDB and live local-model checks require those services. To verify persistence, create a request in MongoDB mode, restart the backend, sign in again and check that the same request and history remain.
+
+## GitHub and deployment package
+The included workflow builds the frontend, runs the demo API tests and checks MongoDB persistence with a MongoDB 7 service when pushed to GitHub. To run the same database check on your test instance, use node --env-file=.env backend/persistence-check.js. It inserts and removes its own probe record. The Dockerfile builds the frontend and ships Node + Python. Supply MONGODB_URI and JWT_SECRET through your hosting platform, expose port 3000, and use a separate non-public provisioning step for staff accounts.
